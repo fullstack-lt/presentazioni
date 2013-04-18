@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Pulsar: easy capistrano deployments</title>
+
+		<meta name="description" content="Pulsar deploy tool presentation">
+		<meta name="author" content="Matteo Latini">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<h1>Pulsar</h1>
+					<h3>Deploy Capistrano facili</h3>
+				</section>
+
+				<section>
+					<h2>Chi sono</h2>
+					<p><img src="img/me.jpeg" alt="Matteo Latini"></p>
+					<p>Matteo Latini -> tw: <a href="https://twitter.com/matteolatini">@matteolatini</a>, gh: <a href="https://github.com/mtylty">mtylty</a></p>
+					<p><br></p>
+					<p>Un backend developer + sistemista per <a href="http://nebulab.it">NebuLab</a></p>
+					<p>Un giorno vorrei fare il sysop...</p>
+					<p>Sono appassionato di strategie e procedure di deploy</p>
+				</section>
+
+				<section>
+					<h2>Intro</h2>
+					<ul>
+						<li>cosa vuol dire deploy</li>
+						<li>tecniche e tool a disposizione</li>
+						<li>cosa usiamo a NebuLab</li>
+					</ul>
+				</section>
+
+				<section data-state="alert">
+					<h2>Premessa</h2>
+					<p>Verranno trattate tecniche di deploy relative alla fase successiva alla configurazione dei server!</p>
+				</section>
+
+				<section>
+					<h2>Cosa è il deploy</h2>
+					<blockquote cite="http://it.wikipedia.org/wiki/Deployment">
+						Il significato più comune del termine deployment in informatica è la consegna al cliente, con relativa installazione e messa in funzione, di una applicazione o di un sistema software. Lo si può considerare come una fase del ciclo di vita del software che conclude lo sviluppo e dà inizio alla manutenzione.
+					</blockquote>
+					<p><small><em>Da <a href="http://it.wikipedia.org/wiki/Deployment">it.wikipedia.org</a></em></small></p>
+				</section>
+
+				<section>
+					<h2>NO!</h2>
+					<p>Non vendiamo software dagli scaffali!</p>
+					<p>Stiamo parlando di applicazioni web</p>
+					<p>É nato un nuovo paradigma...</p>
+				</section>
+
+				<section data-state="blackout">
+					<h2>SHIP IT!</h2>
+					<p><img src="img/shipit.jpg" alt="Ship it! (FAIL!)"></p>
+				</section>
+
+				<section>
+					<h2>SHIP IT FAST!</h2>
+					<p>Oltre al setup, come consegnamo le nuove feature?</p>
+					<p>Ogni modifica deve andare online il prima possibile</p>
+				</section>
+
+				<section>
+					<h2>Come aggiorniamo il codice?</h2>
+					<p><em>PULL</em> vs <em>PUSH</em></p>
+				</section>
+
+				<section>
+					<h2>Strategia PULL</h2>
+					<ul>
+						<li>il codice viene aggiornato automaticamente</li>
+						<li>si ottiene con sofware come <a href="http://www.opscode.com/chef/">Chef</a> o <a href="http://jenkins-ci.org">Jenkins</a></li>
+						<li>sposta la responsabilità sul sysadmin</li>
+						<li>l'app non contiene informazioni relative al deploy</li>
+						<li>richiede una test suite solida e consistente</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Strategia PUSH</h2>
+					<ul>
+						<li>il codice viene aggiornato <em>"on demand"</em></li>
+						<li>si ottiene con sofware come <a href="http://capistranorb.com">Capistrano</a></li>
+						<li>sposta la responsabilità sul programmatore</li>
+						<li>l'app contiene informazioni (delicate) relative al deploy</li>
+						<li>bisogna gestire i permessi opportunamente</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Capistrano</h2>
+					<ul>
+						<li>tool con mentalità UNIX</li>
+						<li>deploy PUSH tramite comandi SSH</li>
+						<li>linguaggio di configurazione basato su <em>task</em> (come Rake)</li>
+						<li>sistema di ruoli per la gestione di ambienti complessi</li>
+						<li>gestione delle configurazioni a <em>ricette</em></li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Quick howto (setup)</h2>
+					<pre><code class="bash"># Da dentro l'app 
+$ cd ./rails/app/path
+
+# Installare capistrano
+$ echo 'gem "capistrano"' >> Gemfile && bundle install
+
+# Aggiungere i file necessari al deploy
+$ capify .
+[add] writing './Capfile'
+[add] making directory './config'
+[add] writing './config/deploy.rb'
+[done] capified!
+
+# Editare e modificare deploy.rb
+$ &lt;editor-preferito&gt; ./config/deploy.rb</code></pre>
+				</section>
+
+				<section>
+					<h2>Dentro deploy.rb</h2>
+					<p><img height="60%" src="img/capistrano_syntax.png" alt="Capistrano syntax"></p>
+				</section>
+
+				<section>
+					<h2>Quick howto (deploy)</h2>
+					<pre><code class="bash"># Controllare se il server può ricevere un deploy
+$ cap deploy:check
+
+# Fare il setup del server
+$ cap deploy:setup
+
+# Fare danni sul server
+$ cap deploy
+
+# Altri task utili (molti altri con cap --tasks)
+$ cap deploy:migrations
+$ cap deploy:rollback
+$ cap deploy:pending
+$ cap shell
+</code></pre>
+				</section>
+
+				<section>
+					<h2>Capistrano FAIL</h2>
+					<ul>
+						<li>niente gestione delle ricette</li>
+						<li>configurazione contenuta nell'applicazione</li>
+						<li>duplicazione ovunque</li>
+						<li>bisogna avere l'app per fare i deploy</li>
+						<li>fa sanguinare gli occhi!</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>WTF (Verbosità inutile)</h2>
+					<p><img src="img/capistrano_shit_output.png" alt="Capistrano shitty output"></p>
+				</section>
+
+				<section>
+					<h1>Alcune soluzioni</h1>
+				</section>
+
+				<section>
+					<h2>Gem dedicata</h2>
+					<ul>
+						<li>solo ricette se pubblica</li>
+						<li>solo nel <code>Gemfile</code> se privata</li>
+						<li>troppo custom, poche best practices</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Webistrano</h2>
+					<p><img height="70%" src="img/webistrano.png" alt="Webistrano"></p>
+					<p><a href="https://github.com/peritor/webistrano">peritor/webistrano</a></p>
+				</section>
+
+				<section>
+					<h2>Webistrano is dead</h2>
+					<p><img height="25%" src="img/webistrano_dead.png" alt="Webistrano not manteined"></p>
+				</section>
+
+				<section>
+					<h2>Strano</h2>
+					<p><img src="img/strano.png" alt="Strano"></p>
+					<p><a href="https://github.com/joelmoss/strano">joelmoss/strano</a></p>
+				</section>
+
+				<section>
+					<h2>Strano is Capistrano</h2>
+					<ul>
+						<li>usa Capistrano da dentro i progetti</li>
+						<li>comodo per avere diverse modalità di deploy</li>
+						<li>stessi problemi di Capistrano</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Deploy button</h2>
+					<p><img height="70%" src="img/deploy_button.png" alt="Deploy button"></p>
+				</section>
+
+				<section>
+					<h2>Deploy button</h2>
+					<ul>
+						<li>tra i vincitori del <a href="http://railsrumble.com">Rails Rumble 2012</a></li>
+						<li>supporta: ftp, ssh, capistrano, chef, heroku, ...</li>
+						<li>perfetto ma non personalizzabile</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Heaven Gem</h2>
+					<ul>
+						<li>usata da <a href="https://github.com/holman/feedback/issues/38">Github per i deploy</a></li>
+						<li>conserva le configurazioni private</li>
+						<li>estremamente versatile e configurabile</li>
+						<li>risolve quasi ogni lacuna di Capistrano</li>
+						<li>ma non è open source :(</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Pulsar</h2>
+					<p>volevamo il paradiso ma era closed source...</p>
+					<p>
+						Pulsar è una <em>gem</em> che gestisce configurazioni e ricette tramite un repository separato, al momento del deploy viene
+						compilato un <em>Capfile</em> su cui viene chiamato Capistrano
+					</p>
+				</section>
+
+				<section>
+					<h2>Struttura directory</h2>
+					<p><img src="img/pulsar_dir_skel.png" alt="Pulsar cool output"></p>
+				</section>
+
+				<section>
+					<h2>Deploy</h2>
+					<p><br /></p>
+					<p><pre><code class="bash">$ PULSAR_CONF_REPO="gh_user/pulsar-conf" pulsar &lt;application&gt; &lt;stage&gt;</code></pre></p>
+					<p><br /></p>
+
+					<ol>
+						<li><code>git clone --quiet --depth=1</code></li>
+						<li><code>bundle install --quiet</code></li>
+						<li><code>touch /tmp/pulsar/capfile</code></li>
+						<li>Una serie di <code>cat</code> che appendono codice al Capfile</li>
+						<li><code>cap --file /tmp/pulsar/capfile deploy</code></li>
+					</ol>
+				</section>
+
+				<section>
+					<h2>Voglio le mie ricette!</h2>
+					<pre><code>#
+# Load deploy recipes
+#
+load_recipes do
+  generic :notify, :cleanup, :rake
+  rails :asset_pipeline, :unicorn, :whenever
+  utils :sync_assets, :sync_db
+end</code></pre>
+				</section>
+
+				<section>
+					<h2>Pulsar WIN</h2>
+					<ul>
+						<li>configurazione separata dall'app e sotto revisione</li>
+						<li>configurazione strutturata e facile da gestire</li>
+						<li>non è necessaria l'app per effettuare un deploy</li>
+						<li>facile integrazione</li>
+						<li>facile utilizzo</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Deploy Action</h2>
+					<video controls width="860" height="530">
+  					<source type="video/mp4" src="vid/pulsar_deploy.m4v">
+					</video>
+				</section>
+
+				<section>
+					<h2>Casi d'uso: Sistemista</h2>
+					<pre><code class="bash"># Installazione
+$ gem install pulsar
+
+# Utilizzo
+$ pulsar nebulab staging
+$ pulsar nebulab staging deploy:pending
+
+$ pulsar nebulab production
+$ pulsar nebulab production --tasks
+
+$ pulsar-utils init
+$ pulsar-utils list
+</code></pre>
+				</section>
+
+				<section>
+					<h2>Casi d'uso: Programmatore</h2>
+					<pre><code class="bash"># Installazione
+$ bundle install
+
+# Utilizzo
+$ pulsar staging
+$ pulsar staging deploy:pending
+
+$ pulsar production
+$ pulsar production --tasks
+</code></pre>
+				</section>
+
+				<section>
+					<h2>Casi d'uso: Noobs e Freelance</h2>
+					<p><img height="20%" src="img/hubot_deploy.png" alt="Hubot deploy"></p>
+					<p>
+						già disponibile <a href="https://gist.github.com/mtylty/5324075">integrazione</a> con <a href="http://hubot.github.com">Hubot</a>, facile integrazione con altre strategie di deploy
+					</p>
+				</section>
+
+				<section>
+					<h2>Sviluppi futuri</h2>
+					<ul>
+						<li>esplorare integrazioni con sinatra</li>
+						<li>gestione dei permessi da riga di comando</li>
+						<li>maggiore velocità</li>
+						<li>trovare altri contributors</li>
+					</ul>
+				</section>
+
+				<section>
+					<p><img src="img/domande.jpeg" alt="Domande?"></p>
+					<p><a href="http://pulsar.nebulab.it">pulsar.nebulab.it</a></p>
+				</section>
+
+				<section>
+					<h1>THE END</h1>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+					// { src: 'plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }
+					// { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
