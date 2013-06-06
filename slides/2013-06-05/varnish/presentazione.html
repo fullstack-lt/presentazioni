@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Varnish</title>
+
+		<meta name="description" content="Varnish - reverse HTTP proxy ">
+		<meta name="author" content="Alessio Rocco">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<h1>Varnish</h1>
+          <h3>Reverse HTTP proxy</h3>
+          <img src="img/varnish_logo.png">
+				</section>
+
+				<section>
+					<h2>Chi sono</h2>
+          <p>
+            <img src="img/alessio_rocco.jpg" alt="Alessio Rocco" width="200px" />
+          </p>
+					<p>
+            AlessioRocco = { 
+            tw: <a href="https://twitter.com/alessio_rocco"
+              class="roll">@alessio_rocco</a>, 
+            gh: <a href="https://github.com/AlessioRocco"
+              class="roll">AlessioRocco</a> }
+          </p>
+          <br />
+          <p>
+            Backend Developer appassionato di sviluppo Agile e Test 
+          </p>
+				</section>
+
+        <section>
+          <h2>Che cos'è Varnish?</h2>
+          <blockquote
+            citi="https://www.varnish-software.com/products-services/varnish-cache">
+            "Varnish Cache is a web accelerator, sometimes referred to as a
+            HTTP accelerator or a reverse HTTP proxy, that will significantly
+            enhance your web performance."
+          </blockquote>
+          <p>
+            <small>
+              <em>
+                Da <a
+                href="https://www.varnish-software.com/products-services/varnish-cache"
+                class="roll">www.varnish-software.com</a>
+              </em>
+            </small>
+          </p>
+        </section>
+
+
+        <section data-state="alert">
+          <h2>Prima di iniziare</h2>
+          <p>
+            Dobbiamo sapere le basi del protocollo HTTP e gli headers che
+            riguardano la cache
+          </p>
+          <img src="img/OK_meme.png" />
+        </section>
+
+        <section>
+          <section>
+            <h2>Le basi del Protocollo HTTP</h2>
+            <img src="img/http.jpg" alt="HTTP request/response control flow" />
+            <ul>
+              <li>È alla base del web (<a href="http://tools.ietf.org/html/rfc2616">ultima versione HTTP/1.1</a>)</li>
+              <li>È composto da una richiesta e una risposta</li>
+              <li>Più richieste possono essere effettuate in serie su una
+              singola connessione</li>
+              <li>I client aprono più connessioni in parallelo per ricevere le
+              risorse</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Richiesta</h2>
+            <pre>
+<span class="fragment">POST</span> <span
+class="fragment">/accounts/ServiceLoginAuth</span> <span
+class="fragment">HTTP/1.1</span>
+<span class="fragment">Host: www.google.com
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; fr;
+rv:1.9.2.16) Gecko/20110319 Firefox/3.6.16
+Accept:
+text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3
+Accept-Encoding: gzip,deflate
+Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+Keep-Alive: 115
+Connection: keep-alive
+Referer: https://www.google.com/accounts/ServiceLogin
+Cookie: GoogleAccountsLocale_session=en;[...]
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 288</span>
+
+<span class="fragment">ltmpl=default[...]&signIn=Sign+in&asts=</span></pre>
+            <ul>
+              <li>I metodi standard sono GET, POST, HEAD, OPTIONS, PUT, DELETE,
+              TRACE, o CONNECT</li>
+              <li>Le new line sono di tipo CRLF</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Risposta</h2>
+            <pre>
+<span class="fragment">HTTP/1.1</span> <span class="fragment">200</span> <span
+class="fragment">OK</span>
+<span class="fragment">Server: Apache/2.2.14 (Ubuntu)
+X-Powered-By: PHP/5.3.2-1ubuntu4.7
+Cache-Control: public, max-age=86400
+Last-Modified: Mon, 04 Apr 2011 04:13:41 +0000
+Expires: Sun, 11 Mar 1984 12:00:00 GMT
+Vary: Cookie,Accept-Encoding
+ETag: "1301890421"
+Content-Type: text/html; charset=utf-8
+Content-Length: 23562
+Date: Mon, 04 Apr 2011 09:02:26 GMT
+X-Varnish: 1886109724 1886107902
+Age: 17324
+Via: 1.1 varnish
+Connection: keep-alive</span>
+
+<span class="fragment">(data)</span></pre>
+            <ul>
+              <li>1xx: Informational - Request received, continuing process</li>
+              <li>2xx: Success - Richiesta ricevuta, capita e accettata</li>
+              <li>3xx: Redirection - Per completare la richiesta è necessaria
+              un'ulteriore azione</li>
+              <li>4xx: Client Error - The request contains bad syntax or
+              cannot be fulfilled</li>
+              <li>5xx: Server Error - The server failed to fulfill an
+              apparently valid request</li>
+            </ul>
+          </section>
+        </section>
+
+				<section>
+					<section>
+						<h2>Caching Headers</h2>
+            <ul>
+              <li>Expires</li>
+              <li>Cache-Control</li>
+              <li>Etag</li>
+              <li>Last-Modified</li>
+              <li>If-Modified-Since</li>
+              <li>If-None-Match</li>
+              <li>Vary</li>
+              <li>Age</li>
+            </ul>
+					</section>
+					<section>
+            <h2>Expires</h2>
+            <h4>response</h4>
+            <p>
+              Indica la data in cui la risposta è considerata vecchia (stale).
+              Un elemento con la cache stale non viene restituito da nessun
+              sistema di cache (proxy o client).
+              <p>
+                Esempio:
+                <pre><code class="bash">Expires: GMT formatted date</code></pre>
+              </p>
+            </p>
+					</section>
+					<section>
+						<h2>Cache-Control</h2>
+            <h4>request / response</h4>
+            <p>Specifica le direttive che <strong>devono</strong> essere applicate da ogni
+            sistema di cache. Gli argomenti principali sono:</p>
+            <ul>
+              <li>public</li>
+              <li>no-store</li>
+              <li>no-cache</li>
+              <li>max-age</li>
+              <li>s-maxage</li>
+              <li>must-revalidate</li>
+            </ul>
+            <br/>
+            <br/>
+            <p>
+              Esempio:
+              <pre><code class="bash">Cache-Control: public, must-revalidate, max-age=2592000</code></pre>
+            </p>
+					</section>
+					<section>
+						<h2>Last-Modified-Since & If-Modified-Since</h2>
+            <h4>If-Modified-Since: request / Last-Modified: response</h4>
+            <img src="img/If-Modified-Since.png" />
+            <p>
+              Esempio:
+              <pre><code class="bash">Last-Modified: Wed, 01 Sep 2004 13:24:52 GMT
+If-Modified-Since: Wed, 01 Sep 2004 13:24:52 GMT</code></pre>
+            </p>
+					</section>
+          <section>
+            <h2>If-None-Modified & Etag</h2>
+            <h4>If-None-Modified: request / Etag: response</h4>
+            <img src="img/If-None-Match.png" />
+            <p>
+              Esempio:
+              <pre><code class="bash">If-None-Match: "1edec-3e3073913b100"
+Etag: "1edec-3e3073913b100"</code></pre>
+            </p>
+          </section>
+          <section>
+            <h2>Vary</h2>
+            <h4>response</h4>
+            <p>Viene utilizzata per indicare che la risposta può cambiare in
+            base agli header della richiesta. 
+            <br/>
+            Ad esempio <i>Vary: User-Agent</i> indica una cache che può
+            cambiare per ogni <i>User-Agent</i>
+          </section>
+          <section>
+            <h2>Age</h2>
+            <ul>
+              <li>Indica l'età della risposta</li>
+              <li>Esempio con max-age: cahe duration = max-age -
+              Age</li>
+          </section>
+				</section>
+        
+        <section>
+          <h2>Iniziamo ...sul serio!<h2>
+          <img src="img/frogman-happy.jpg" />
+        </section>
+
+        <section>
+          <h2>VCL - Varnish Configuration Language</h2>
+          <pre><code class="bash">backend sinatra {
+  .host = "127.0.0.1";
+  .port = "4567";
+}
+
+sub vcl_recv {
+  if(req.url ~ "^/nocache$"){
+    return(pass);
+  }
+  if(req.url ~ "^/error$"){
+    return(error);
+  }
+}
+
+sub vcl_fetch {
+  if(req.url ~ "^/cache$"){
+    set beresp.ttl = 10s;
+  }
+  if(req.url ~ "^/nocacheff$"){
+    return(hit_for_pass);
+  }
+}</code></pre>
+        </section>
+
+        <section>
+          <h2>Flow completo della richiesta<h2>
+          <img src="img/detailed-request-flow.png" />
+        </section>
+
+        <section>
+          <h2>WTF!!</h2>
+          <img src="img/meme-what.jpg" />
+        </section>
+
+        <section>
+          <h2>Flow semplificato della richiesta<h2>
+          <img src="img/simplified-request-flow.png" />
+        </section>
+
+        <section>
+          <h2>VCL - Functions</h2>
+          <ul>
+            <li>regsub(str, regex, sub)</li>
+            <li>regsuball(str, regex, sub)</li>
+            <li>ban_url(regex)</li>
+            <li>ban(expression)</li>
+            <li>purge;</li>
+            <li>return(restart)</li>
+            <li>return()</li>
+            <li>hash_data()</li>
+          </ul>
+        </section>
+
+        <section>
+          <section>
+            <h2>vcl_recv</h2>
+            <p>
+              È la prima funzione che viene eseguita e serve principlamente per:
+              <ul>
+                <li>Modificare i dati della richiesta per ridurre la diversità
+                della cache. Ad esempio eliminare "www" da un URL</li>
+                <li>Decidere la policy di cache in base ai dati della richiesta</li>
+                <li>Eseguire delle regole di re-write per una specifica
+                applicazione</li>
+                <li>Decidere il WebServer da utilizzare</li>
+              </ul>
+            </p>
+          </section>
+          <section>
+            <h2>Variabili disponibili</h2>
+            <ul>
+              <li>req.*</li>
+            <ul>
+          </section>
+          <section>
+            <h2>vcl_recv terminating statements</h2>
+            <p>
+              <ul>
+                <li>pass</li>
+                <li>pipe</li>
+                <li>lookup</li>
+                <li>error</li>
+              </ul>
+            </p>
+          </section>
+          <section>
+            <h2>Default</h2>
+            <pre><code class="bash">sub vcl_recv {
+    if (req.restarts == 0) {
+        if (req.http.x-forwarded-for) {
+            set req.http.X-Forwarded-For =
+                req.http.X-Forwarded-For + ", " + client.ip;
+        } else {
+            set req.http.X-Forwarded-For = client.ip;
+        }
+    }
+    if (req.request != "GET" &&
+      req.request != "HEAD" &&
+      req.request != "PUT" &&
+      req.request != "POST" &&
+      req.request != "TRACE" &&
+      req.request != "OPTIONS" &&
+      req.request != "DELETE") {
+        /* Non-RFC2616 or CONNECT which is weird. */
+        return (pipe);
+    }
+    if (req.request != "GET" && req.request != "HEAD") {
+        /* We only deal with GET and HEAD by default */
+        return (pass);
+    }
+    if (req.http.Authorization || req.http.Cookie) {
+        /* Not cacheable by default */
+        return (pass);
+    }
+    return (lookup);
+} </code></pre>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h2>vcl_fetch</h2>
+            <ul>
+              <li>Fare l'Override del tempo di cache di uno specifico URL</li>
+              <li>Eliminare i Set-Cookie header non necessari</li>
+              <li>Eliminare i Vary headers buggati</li>
+              <li>Applicare altre policies di caching</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Variabili disponibili</h2>
+            <ul>
+              <li>req.*</li>
+              <li>bereq.*</li>
+              <li>beresp.*</li>
+            <ul>
+          </section>
+          <section>
+            <h2>vcl_fetch terminating statements</h1>
+            <ul>
+              <li>deliver</li>
+              <li>hit_for_pass</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Default</h2>
+            <pre><code class="bash">sub vcl_fetch {
+    if (beresp.ttl <= 0s ||
+        beresp.http.Set-Cookie ||
+        beresp.http.Vary == "*") {
+          /*
+           * Mark as "Hit-For-Pass" for the next 2 minutes
+           */
+          set beresp.ttl = 120 s;
+          return (hit_for_pass);
+    }
+    return (deliver);
+} </code></pre>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h2>vcl_hash</h2>
+            <ul>
+              <li>Definisce l'hash key usata per identificare un oggetto che è in cache</li>
+              <li>Viene eseguita dopo vcl_recv</li>
+              <li>Utile per fare caching unico per ogni utente</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Variabili disponibili</h2>
+            <ul>
+              <li>req.*</li>
+            </ul>
+          </section>
+          <section>
+            <h2>vcl_hash terminating statements</h1>
+            <ul>
+              <li>hash</li>
+            </ul>
+          </section>
+          <section>
+            <h2>Default</h2>
+            <pre><code class="bash">sub vcl_hash {
+    hash_data(req.url);
+    if (req.http.host) {
+        hash_data(req.http.host);
+    } else {
+        hash_data(server.ip);
+    }
+    return (hash);
+} </pre></code>
+          </section>
+        </section>
+
+        <section>
+
+          <section>
+            <h2>Stati meno usati</h2>
+            <ul>
+              <li>vcl_hit</li>
+              <li>vcl_miss</li>
+              <li>vcl_pass</li>
+              <li>vcl_deliver</li>
+              <li>vcl_error</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>vcl_hit</h2>
+            <p>
+              Eseguito subito dopo che un oggetto viene trovato in cache
+              (hit). Viene usato maggiormente per cambiare il TTL, lanciare un
+              purge; o anche per eliminare un vecchio oggetto
+            </p>
+            <pre><code class="bash">sub vcl_hit {
+  return (deliver);
+} </code></pre>
+          </section>
+
+          <section>
+            <h2>vcl_miss</h2>
+            <p>
+              Eseguito subito dopo che un oggetto non è stato trovato nella
+              cache viene usato maggiormente per il purge; o per modificare 
+              gli header della richiesta da mandare al backend
+            </p>
+            <pre><code class="bash">sub vcl_miss {
+  return (fetch);
+}</code></pre>
+          </section>
+
+          <section>
+            <h2>vcl_pass</h2>
+            <p>
+              Viene eseguito dopo vcl_recv o dopo un lookup che ritorna un
+              hitpass ma non dopo un vcl_fetch e determina che non c'è un
+              oggetto in cache e che l'oggetto non deve essere messo in cache.
+              Ha un utilizzo limitato.
+            </p>
+            <pre><code class="bash">sub vcl_pass {
+  return (pass);
+}</code></pre>
+          </section>
+
+          <section>
+            <h2>vcl_deliver</h2>
+            <p>
+              È l'exit point di tutte le richieste eccetto per vcl_pipe per la
+              maggior parte utilizzato per aggiungere e rimuovere headers di
+              debug
+            </p>
+            <pre><code class="bash">sub vcl_deliver {
+  return (deliver);
+}</code></pre>
+          </section>
+
+          <section>
+            <h2>vcl_error</h2>
+            <p>
+              Usato per generare del contenuto direttamente da Varnish senza
+              interrogare il server web, di default messaggi di errore, anche 
+              utilizzato per redirect.
+            </p>
+            <pre><code class="bash">sub vcl_error {
+    set obj.http.Content-Type = "text/html; charset=utf-8";
+    set obj.http.Retry-After = "5";
+    synthetic {"
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;"} + obj.status + " " + obj.response + {"&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Error "} + obj.status + " " + obj.response + {"&lt;/h1&gt;
+    &lt;p&gt;"} + obj.response + {"&lt;/p&gt;
+    &lt;h3&gt;Guru Meditation:&lt;/h3&gt;
+    &lt;p&gt;XID: "} + req.xid + {"&lt;/p&gt;
+&lt;hr&gt;
+    &lt;p&gt;Varnish cache server&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt; "};
+    return (deliver);
+}</code></pre>
+          </section>
+        </section>
+
+        <section>
+          <h2>Invalidare la cache</h2>
+          <ul>
+            <li>purge;</li>
+            <li>ban()</li>
+            <li>set req.hash_always_miss = true;</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Perchè varnish?</h2>
+          <ul>
+            <li>Progettato per risolvere problemi reali</li>
+            <li>Sviluppato per moderni carichi di lavoro</li>
+            <li>Studiato per funzionare su hardware e SO moderni</li>
+            <li>Funziona bene sia su grandi progetti con più server che su
+                piccole applicazioni</li>
+            <li>Flessibile e facile da configurare (VCL)</li>
+            <li>Viene usato da big come Twitter, Facebook, Heroku e LinkedIn</li>
+            <li>È free e Open-Source</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Link Utili</h2>
+          <a href="https://www.varnish-cache.org/">https://www.varnish-cache.org/</a>
+          <a href="http://www.packtpub.com/varnish-cache/book">
+            http://www.packtpub.com/varnish-cache/book
+          </a>
+          <a href="http://overstimulate.com/articles/varnish-getting-started">
+            http://overstimulate.com/articles/varnish-getting-started
+          </a>
+        </section>
+
+        <section>
+          <h1>Domande?</h1>
+        </section>
+
+				<section>
+					<h1>THE END</h1>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+					// { src: 'plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }
+					// { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
