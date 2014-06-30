@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Sails.js: il web framework dei tuoi sogni!</title>
+
+		<meta name="description" content="Il framework web che ogni sviluppatore vorrebbe">
+		<meta name="author" content="Massimiliano Lattanzio">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+		<link rel="stylesheet" href="css/style.css">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Sails.js</h1>
+					<img src="img/home.png">
+				</section>
+
+				<section>
+					<h2>Chi sono</h2>
+					<img src="img/me.jpeg" alt="Massimiliano Lattanzio" style="display: inline-block;margin: 0;">
+					<div style="display: inline-block;text-align: left;margin-left: 10px;vertical-align: top;">
+						<p>Massimiliano Lattanzio</p>
+						<p><img src="img/twitter.png" class="rotate" /> Twitter: <a href="https://twitter.com/M4sSy89" target="_blank">@M4sSy89</a></p>
+						<p><img src="img/github.png" class="rotate" /> Github: <a href="https://github.com/MassimilianoLattanzio" target="_blank">MassimilianoLattanzio</a></p>
+					</div>
+					<p><br></p>
+					<p>Web developer presso <a href="http://idoctors.it" target="_blank">iDoctors.it</a></p>
+					<p>Sempre in cerca di novità su ciò che riguarda lo sviluppo web</p>
+				</section>
+
+				<section>
+					<h2>Cos'è Sails.js?</h2>
+					<p>Sails è un framework MVC per Node.js</p>
+					<p><br/></p>
+					<p>L'architettura prende spunto dai migliori framework MVC (Rails, <span class="zend">Zend</span>, Symfony, ecc...), con in più l'integrazione del nuovo approccio delle web app (API, single page apps, realtime, ecc..)</p>
+				</section>
+
+				<section>
+					<h2>I punti di forza</h2>
+					<ul class="punti_forza">
+						<li class="fragment">Reatime: <small>molte funzioni disponibili grazie a socket.io</small></li>
+						<li class="fragment">Performance: <small>con anche il supporto nativo di redis</small></li>
+						<li class="fragment">Node.js: <small>si usa lo stesso linguaggio per backend che frontend</small></li>
+						<li class="fragment">Grunt: <small>nativo</small></li>
+						<li class="fragment">Estremamente modulare...</li>
+					</ul>
+				</section>
+
+				<section>
+					<ul>
+						<li>
+							<h3>Model</h3>
+							<p>Vari adapter nativi tra cui MongoDB, MySQL, PostgreSQL</p>
+						</li>
+						<li class="fragment">
+							<h3>Views</h3>
+							<p>Template engine supportati: ejs, jade</p>
+						</li>
+						<li class="fragment">
+							<h3>Controller</h3>
+							<p>Moduli di Express.js come ad esempio Passport</p>
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<p><img src="img/bla.gif"></p>
+					<p>Si ok dov'è il codice?</p>
+				</section>
+
+				<section>
+					<h2>La semplicità prima di tutto</h2>
+					<p>Installazione</p>
+					<pre><code>sudo npm -g install sails</code></pre>
+					<p>Creazione di un nuovo progetto</p>
+					<pre><code>sails new testProject --linker</code></pre>
+					<p>Avviamo il server</p>
+					<pre><code>cd testProject
+sails lift</code></pre>
+					<p>A questo punto visitiamo la pagina <a href="http://localhost:1337" target="_blank">http://localhost:1337</a> e vediamo il risultato</p>
+				</section>
+
+				<section>
+					<h2>Configuriamo il DB</h2>
+					<p>In questo esempio utilizzeremo MySQL quindi installiamo l'adapter</p>
+					<pre><code>sudo npm install sails-mysql</code></pre>
+					<p>apriamo il file config/adapters.js ed impostiamo i parametri del server</p>
+					<pre><code>module.exports.adapters = {
+
+  'default': 'myLocalMySQLDatabase',
+
+  myLocalMySQLDatabase: {
+
+    module: 'sails-mysql',
+    host: 'YOUR_MYSQL_SERVER_HOSTNAME_OR_IP_ADDRESS',
+    user: 'YOUR_MYSQL_USER',
+    password: 'YOUR_MYSQL_PASSWORD', 
+    database: 'YOUR_MYSQL_DB'
+  }
+};</code></pre>
+				</section>
+
+				<section>
+					<h3>Creiamo un modello</h3>
+					<pre><code>sails generate model user name:string surname:string</code></pre>
+					<h3>Creiamo un controller</h3>
+					<pre><code>sails generate controller user</code></pre>
+					<p>Avviamo il server</p>
+					<pre><code>sails lift</code></pre>
+					<p>Visitiamo la pagina <a href="http://localhost:1337/user" target="_blank">http://localhost:1337/user</a> e vediamo il risultato</p>
+				</section>
+
+				<section>
+					<h2>Abbiamo il nostro server per le API</h2>
+					<p>per creare un nuovo utente basterà inserire nella url il seguente indirizzo:</p>
+					<p><a href="http://localhost:1337/user/create?name=Larry&surname=Page" target="_blank">http://localhost:1337/user/create?name=Larry&surname=Page</a></p>
+				</section>
+
+				<section>
+					<h3>Creiamo una vista</h3>
+					<p>Aggiungiamo un metodo nel controller in cui carichiamo la vista</p>
+					<pre><code>nomeMetodo: function(req, res) {
+  User.find(function (err,users) {
+    return res.view({ users: users });
+  });
+}</code></pre>
+					<p>poi creiamo un file nomeMetodo.ejs nella directory views dove inseriremo il nostro html/template ejs</p>
+					<pre><code><ul>
+  <% _.each(users,function(user) { %>
+    <li><%= user.name+" "+user.surname %></li>
+  <% }); %>
+</ul></code></pre>
+					<p>Andiamo su <a href="http://localhost:1337/user/nomeMetodo" target="_blank">http://localhost:1337/user/nomeMetodo</a> e vediamo il risultato</p>
+				</section>
+
+				<section>
+					<h3>Eventi in real-time</h3>
+					<p>Sails ha una gestiona nativa delle richieste tramite socket, con <b>un semplicissimo passaggio</b> il gioco è fatto!</p>
+					<p>Inviando una richiesta al server con la lista degli utenti...</p>
+					<pre><code>socket.get('/user');</code></pre>
+					<p>...il client viene automaticamente avvisato ad ogni cambiamento!</p>
+				</section>
+
+				<section>
+					<h3>Un piccolo enhancement</h3>
+					<p>Aggiungendo la riga di prima al file app.js faremo in modo che ogni client che si connette rimarrà in ascolto sulla lista degli utenti</p>
+					<p>Aggiungendo il codice di sotto nella view creata precedentemente si potrà aggiornare la lista degli utenti iscritti in real time</p>
+					<pre><code><script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script type="text/javascript">
+  $(function() {
+    socket.on('message', function messageReceived(message) {
+      $('ul').append(
+        $('<li>').html(message.data.name+" "+message.data.surname)
+      );
+    });
+  });
+</script></code></pre>
+				</section>
+
+				<section>
+					<img src="img/triste.jpg" />
+					<h3>Quindi fino ad oggi ho usato il framework sbagliato?</h3>
+				</section>
+
+				<section>
+					<img src="img/no.jpg" />
+				</section>
+
+				<section>
+					<h2>I difetti di Sails</h2>
+					<p>Come tutto, anche Sails ha i suoi pregi e difetti</p>
+					<ul>
+						<li>Ancora in beta (ma anche alpha)</li>
+						<li>Documentazione scarsa</li>
+						<li>Community</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Link utili</h2>
+					<p><br/></p>
+					<p><a href="http://sailsjs.org/" target="_blank">Sito web ufficale di Sails.js</a></p>
+					<p><br/></p>
+					<p><a href="http://irlnathan.github.io/sailscasts/" target="_blank">Sailscast</a></p>
+				</section>
+
+				<section>
+					<h2>Domande?</h2>
+					<img src="img/domande.jpg" />
+				</section>
+
+				<section>
+					<img src="img/fine.jpg" />
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					//{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					//{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					//{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
